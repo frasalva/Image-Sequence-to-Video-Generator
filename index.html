@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizzatore di Immagini</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Sfondo fisso della pagina */
+        }
+        .image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: fit-content;
+            margin: 2rem auto;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        canvas {
+            border-radius: 0.5rem;
+            /* La canvas avrà lo sfondo trasparente se l'opzione è attiva */
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center p-8">
+    <h1 class="text-4xl font-bold text-gray-800 mb-6">Visualizzatore di Immagini</h1>
+    <p class="text-gray-600 text-lg mb-8 text-center max-w-2xl">
+        Carica le tue immagini, imposta la griglia, la spaziatura e la velocità, poi clicca su "Avvia" per vederle apparire in sequenza.
+        Al termine, potrai scaricare il video generato.
+    </p>
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl">
+        <!-- Controlli per l'input utente -->
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-6 mb-6 items-end">
+            <!-- Caricamento immagini -->
+            <div class="col-span-1 md:col-span-6">
+                <label for="file-input" class="block text-sm font-medium text-gray-700">Carica Immagini:</label>
+                <input type="file" id="file-input" multiple accept="image/*" class="mt-1 block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-violet-50 file:text-violet-700
+                    hover:file:bg-violet-100 cursor-pointer"/>
+            </div>
+
+            <!-- Colonne -->
+            <div>
+                <label for="columns" class="block text-sm font-medium text-gray-700">Colonne:</label>
+                <input type="number" id="columns" value="5" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"/>
+            </div>
+
+            <!-- Righe -->
+            <div>
+                <label for="rows" class="block text-sm font-medium text-gray-700">Righe:</label>
+                <input type="number" id="rows" value="5" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"/>
+            </div>
+
+            <!-- Spaziatura -->
+            <div>
+                <label for="spacing" class="block text-sm font-medium text-gray-700">Spaziatura (px):</label>
+                <input type="number" id="spacing" value="10" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"/>
+            </div>
+
+            <!-- Velocità -->
+            <div>
+                <label for="speed" class="block text-sm font-medium text-gray-700">Velocità (ms):</label>
+                <input type="number" id="speed" value="100" min="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"/>
+            </div>
+
+            <!-- Colore Sfondo -->
+            <div>
+                <label for="bg-color" class="block text-sm font-medium text-gray-700">Colore Sfondo:</label>
+                <input type="color" id="bg-color" value="#f3f4f6" class="mt-1 block w-full h-[42px] rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-1"/>
+            </div>
+            
+            <!-- Selezione formato video -->
+            <div class="col-span-1 md:col-span-3">
+                <label for="export-format" class="block text-sm font-medium text-gray-700">Formato Video:</label>
+                <select id="export-format" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
+                    <option value="webm">WebM</option>
+                    <option value="mp4">MP4</option>
+                </select>
+            </div>
+
+            <!-- Opzione trasparenza -->
+            <div class="col-span-1 md:col-span-3 flex items-center justify-center">
+                <input type="checkbox" id="transparent-bg" class="rounded text-indigo-600 focus:ring-indigo-500 mr-2">
+                <label for="transparent-bg" class="text-sm font-medium text-gray-700">Sfondo trasparente (solo WebM)</label>
+            </div>
+            
+            <!-- Opzione mantieni proporzioni -->
+            <div class="col-span-1 md:col-span-6 flex items-center justify-center">
+                <input type="checkbox" id="maintain-aspect-ratio" checked class="rounded text-indigo-600 focus:ring-indigo-500 mr-2">
+                <label for="maintain-aspect-ratio" class="text-sm font-medium text-gray-700">Mantieni proporzioni</label>
+            </div>
+
+            <!-- Bottoni -->
+            <div class="col-span-1 md:col-span-6 flex space-x-2 justify-center">
+                <button id="start-btn" class="flex-1 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                    Avvia
+                </button>
+                <button id="stop-btn" class="flex-1 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                    Ferma
+                </button>
+                <button id="export-btn" class="flex-1 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                    Esporta Video
+                </button>
+            </div>
+        </div>
+        <div id="status-message" class="text-center text-sm text-gray-500 mt-4 h-5"></div>
+    </div>
+    
+    <!-- Contenitore della canvas dove verranno disegnate le immagini -->
+    <div id="image-container" class="image-container">
+        <canvas id="display-canvas"></canvas>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('file-input');
+            const imageContainer = document.getElementById('image-container');
+            // Otteniamo il contesto 2D della canvas con l'opzione alpha: true per supportare la trasparenza
+            const canvas = document.getElementById('display-canvas');
+            const ctx = canvas.getContext('2d', { alpha: true });
+            
+            const startButton = document.getElementById('start-btn');
+            const stopButton = document.getElementById('stop-btn');
+            const exportButton = document.getElementById('export-btn');
+            const columnsInput = document.getElementById('columns');
+            const rowsInput = document.getElementById('rows');
+            const spacingInput = document.getElementById('spacing'); // Input per la spaziatura
+            const speedInput = document.getElementById('speed');
+            const bgColorInput = document.getElementById('bg-color');
+            const transparentBgCheckbox = document.getElementById('transparent-bg');
+            const maintainAspectRatioCheckbox = document.getElementById('maintain-aspect-ratio'); // Nuovo input per mantenere le proporzioni
+            const exportFormatSelect = document.getElementById('export-format'); // Nuovo input per il formato di esportazione
+            const statusMessage = document.getElementById('status-message');
+
+            let uploadedImages = [];
+            let intervalId = null;
+            let currentIndex = 0;
+            let mediaRecorder = null;
+            let videoChunks = [];
+            const imageSize = 100; // Dimensione fissa della cella per ogni immagine in pixel
+            
+            // Mappa dei formati supportati e dei loro tipi MIME
+            const supportedFormats = {
+                webm: {
+                    mimeType: 'video/webm; codecs=vp9',
+                    extension: 'webm'
+                },
+                mp4: {
+                    mimeType: 'video/mp4; codecs=avc1.42E01E,mp4a.40.2',
+                    extension: 'mp4'
+                }
+            };
+
+            // Controlla il supporto dei vari tipi MIME e disabilita le opzioni non supportate
+            if (!MediaRecorder.isTypeSupported(supportedFormats.webm.mimeType)) {
+                const webmOption = exportFormatSelect.querySelector('option[value="webm"]');
+                webmOption.disabled = true;
+                webmOption.textContent += " (Non supportato)";
+                // Se MP4 è supportato, impostalo come default
+                if (MediaRecorder.isTypeSupported(supportedFormats.mp4.mimeType)) {
+                    exportFormatSelect.value = 'mp4';
+                }
+            }
+            if (!MediaRecorder.isTypeSupported(supportedFormats.mp4.mimeType)) {
+                const mp4Option = exportFormatSelect.querySelector('option[value="mp4"]');
+                mp4Option.disabled = true;
+                mp4Option.textContent += " (Non supportato)";
+            }
+
+            // Funzione per aggiornare lo sfondo della canvas in tempo reale
+            const updateCanvasBackground = () => {
+                if (transparentBgCheckbox.checked) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                } else {
+                    ctx.fillStyle = bgColorInput.value;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            // Aggiorna lo sfondo della canvas quando l'input del colore cambia
+            bgColorInput.addEventListener('input', updateCanvasBackground);
+            
+            // Disabilita l'opzione di sfondo trasparente se si seleziona MP4
+            exportFormatSelect.addEventListener('change', (event) => {
+                if (event.target.value === 'mp4') {
+                    transparentBgCheckbox.checked = false;
+                    transparentBgCheckbox.disabled = true;
+                } else {
+                    transparentBgCheckbox.disabled = false;
+                }
+            });
+
+            // Gestisce il caricamento delle immagini
+            fileInput.addEventListener('change', (event) => {
+                uploadedImages = [];
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+
+                // Carica ogni file immagine in un oggetto Image
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            uploadedImages.push(img);
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+                exportButton.disabled = true; // Disabilita l'esportazione finché non viene generato un video
+                imageContainer.style.display = 'none'; // Nascondi la canvas
+            });
+
+            const startDisplay = () => {
+                if (uploadedImages.length === 0) {
+                    statusMessage.textContent = 'Per favore, carica prima alcune immagini.';
+                    return;
+                }
+
+                const selectedFormat = exportFormatSelect.value;
+                const selectedMimeType = supportedFormats[selectedFormat].mimeType;
+                
+                if (!selectedMimeType) {
+                    statusMessage.textContent = `Il formato selezionato (${selectedFormat}) non è supportato dal tuo browser.`;
+                    return;
+                }
+                
+                clearInterval(intervalId); // Ferma qualsiasi intervallo precedente
+                videoChunks = []; // Pulisce i dati del video precedente
+
+                const columns = parseInt(columnsInput.value, 10);
+                const rows = parseInt(rowsInput.value, 10);
+                const spacing = parseInt(spacingInput.value, 10); // Legge il valore della spaziatura
+                const speed = parseInt(speedInput.value, 10);
+                const maintainAspectRatio = maintainAspectRatioCheckbox.checked; // Legge l'opzione mantieni proporzioni
+                const totalCells = columns * rows;
+
+                if (columns <= 0 || rows <= 0 || spacing < 0 || speed < 10) {
+                    statusMessage.textContent = 'Per favore, inserisci valori validi: Colonne e Righe devono essere > 0, Spaziatura >= 0, Velocità >= 10.';
+                    return;
+                }
+
+                // Imposta le dimensioni della canvas in base al numero di colonne, righe e spaziatura
+                canvas.width = (columns * imageSize) + (columns - 1) * spacing;
+                canvas.height = (rows * imageSize) + (rows - 1) * spacing;
+                imageContainer.style.display = 'flex'; // Mostra la canvas
+
+                // Gestione dello sfondo trasparente all'inizio della registrazione
+                updateCanvasBackground();
+
+                currentIndex = 0;
+                exportButton.disabled = true;
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                statusMessage.textContent = 'Generazione in corso...';
+
+                // Imposta il registratore video
+                const stream = canvas.captureStream(60); // 60 FPS
+                const options = { mimeType: selectedMimeType };
+                mediaRecorder = new MediaRecorder(stream, options);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    videoChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    statusMessage.textContent = 'Video generato. Pronto per l\'esportazione.';
+                    startButton.disabled = false;
+                    exportButton.disabled = false;
+                };
+
+                mediaRecorder.start();
+
+                intervalId = setInterval(() => {
+                    if (currentIndex < totalCells && currentIndex < uploadedImages.length) {
+                        const img = uploadedImages[currentIndex];
+                        const col = currentIndex % columns;
+                        const row = Math.floor(currentIndex / columns);
+                        
+                        // Calcola la posizione di disegno tenendo conto della spaziatura
+                        const x = col * (imageSize + spacing);
+                        const y = row * (imageSize + spacing);
+                        
+                        // Pulisce l'area della cella per garantire la trasparenza (se abilitato)
+                        // Altrimenti, disegna lo sfondo
+                        if (transparentBgCheckbox.checked) {
+                           ctx.clearRect(x, y, imageSize, imageSize);
+                        } else {
+                            ctx.fillStyle = bgColorInput.value;
+                            ctx.fillRect(x, y, imageSize, imageSize);
+                        }
+                        
+                        if (maintainAspectRatio) {
+                            // Calcola le dimensioni e la posizione per mantenere le proporzioni
+                            const aspectRatio = img.width / img.height;
+                            let newWidth, newHeight, drawX, drawY;
+
+                            if (aspectRatio > 1) { // Immagine più larga che alta
+                                newWidth = imageSize;
+                                newHeight = imageSize / aspectRatio;
+                                drawX = x;
+                                drawY = y + (imageSize - newHeight) / 2;
+                            } else { // Immagine più alta che larga (o quadrata)
+                                newWidth = imageSize * aspectRatio;
+                                newHeight = imageSize;
+                                drawX = x + (imageSize - newWidth) / 2;
+                                drawY = y;
+                            }
+                            ctx.drawImage(img, drawX, drawY, newWidth, newHeight);
+                        } else {
+                            // Disegna l'immagine occupando tutta la cella (stretch)
+                            ctx.drawImage(img, x, y, imageSize, imageSize);
+                        }
+                        
+                        currentIndex++;
+                    } else {
+                        // Quando tutte le immagini sono state visualizzate, ferma l'intervallo e il registratore
+                        clearInterval(intervalId);
+                        mediaRecorder.stop();
+                        stopButton.disabled = true;
+                        statusMessage.textContent = 'Visualizzazione completata. Pronto per l\'esportazione.';
+                    }
+                }, speed);
+            };
+
+            const stopDisplay = () => {
+                clearInterval(intervalId);
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                startButton.disabled = false;
+                stopButton.disabled = true;
+                statusMessage.textContent = 'Visualizzazione interrotta.';
+            };
+
+            const exportVideo = () => {
+                if (videoChunks.length > 0) {
+                    const selectedFormat = exportFormatSelect.value;
+                    const { mimeType, extension } = supportedFormats[selectedFormat];
+                    const blob = new Blob(videoChunks, { type: mimeType });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `sequenza_immagini.${extension}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } else {
+                    statusMessage.textContent = 'Nessun video da esportare. Avvia prima la visualizzazione.';
+                }
+            };
+
+            startButton.addEventListener('click', startDisplay);
+            stopButton.addEventListener('click', stopDisplay);
+            exportButton.addEventListener('click', exportVideo);
+            exportButton.disabled = true;
+            stopButton.disabled = true;
+        });
+    </script>
+</body>
+</html>
