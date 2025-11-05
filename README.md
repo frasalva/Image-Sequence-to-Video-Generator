@@ -13,3 +13,9 @@ Video Export Options: Export the final animated sequence as a video file in eith
 Transparent Background Support: The WebM format includes a transparent background option, ideal for overlaying the video on other media.
 
 This project is built using vanilla JavaScript for the core logic and is styled with the Tailwind CSS framework for a responsive and modern user experience.
+
+
+
+
+https://github.com/user-attachments/assets/4c4196e7-cf46-440e-9d66-2558ebb59ba6
+
